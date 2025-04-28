@@ -1,0 +1,7 @@
+
+body { font-family: 'Segoe UI', sans-serif; background: #f0f2f5; margin: 0; padding: 0; }
+header { background: #0D47A1; color: white; padding: 1rem; text-align: center; }
+.container-fluid { padding: 2rem; }
+.filters, .table-wrapper { background: white; padding: 1rem; margin-bottom: 1rem; border-radius: 8px; }
+table { width: 100%; border-collapse: collapse; }
+th, td { padding: 0.75rem; text-align: left; border-bottom: 1px solid #ddd; }

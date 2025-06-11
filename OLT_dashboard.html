@@ -11,13 +11,16 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels"></script>
+<link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+<script src="https://unpkg.com/leaflet.heat/dist/leaflet-heat.js"></script>
 
 
   <style>
     :root { --primary: #0D47A1; --secondary: #1e85e5; --bg: #ECEFF1; --text: #263238; --hover: rgba(13,71,161,0.15); --shadow: rgba(0,0,0,0.1); --panel: #ffffff; --texto: #fff; }
     [data-theme="dark"] { --bg:#2C2C2C; --primary:#1a9eca; --secondary:#1ee2e5; --text:#FFFFFF; --hover:rgba(255,255,255,0.1); --shadow:rgba(0,0,0,0.2); --panel:#3A3A3A; --texto:#263238; }
     body { background: var(--bg); color: var(--text); font-family:'Segoe UI',sans-serif; margin:0; padding-top:60px;}
-    header { background: var(--primary); color:#fff; position:fixed; top:0; width:100%; z-index:100; display:flex; align-items:center; justify-content:space-between; padding:.75rem 1.5rem; box-shadow:0 2px 4px var(--shadow);}    
+    header { background: var(--primary); color:#fff; position:fixed; top:0; width:100%; z-index: 9999;; display:flex; align-items:center; justify-content:space-between; padding:.75rem 1.5rem; box-shadow:0 2px 4px var(--shadow);}    
     header .title { font-size:1.4rem; font-weight:600; display:flex; align-items:center; } header .title i{margin-right:.5rem;}
     #themeToggle { background:none;border:none;color:#fff;font-size:1.2rem;cursor:pointer;margin-left:.5rem; }
     .container-fluid{padding:2rem 1rem;}
@@ -44,6 +47,19 @@
   height: auto;
 }
 
+#graficoContratos {
+  width: 100% !important;
+  max-width: 100% !important;
+  background: var(--bg);
+  border-radius: .75rem;
+  box-shadow: 0 2px 6px var(--shadow);
+  padding: 1rem; /* Adicione padding para evitar cortes */
+  margin: 0; /* Remova margens extras */
+  max-height: 450px;
+  height: auto;
+}
+
+
 .pagination {
   display: flex;
   justify-content: center;
@@ -65,6 +81,34 @@
   cursor: not-allowed;
 }
 
+.autocomplete-list, .autocomplete-item {
+  color: var(--text);
+  background:  var(--bg);
+}
+
+
+#dashboard-month-nav {
+  position: static; 
+}
+
+#dashboard-month-nav.sticky-nav {
+  position: fixed;
+  top: 60px; /* altura do header */
+  left: 0;
+  width: 100vw;
+  z-index: 1000;
+  background: var(--panel);
+  box-shadow: 0 2px 8px var(--shadow);
+  padding: 12px 0 12px 0;
+  border-radius: 0 0 12px 12px;
+  display: flex;
+  justify-content: center;
+  transition: box-shadow 0.2s;
+}
+
+#dashboard.sticky-padding {
+  padding-top: 70px;
+}
 
 
  
@@ -82,11 +126,6 @@
 <div class="container-fluid">
   <div class="filters">
     <input id="filter-olt" class="form-control" placeholder="Filtrar OLT">
-    <select id="filter-status" class="form-select">
-      <option value="">Todos os status</option>
-      <option value="DOWN">DOWN</option>
-      <option value="UP">Normalizado</option>
-    </select>
     <div style="position:relative;">
       <input id="filter-switch" class="form-control" placeholder="Filtrar Rede SW" autocomplete="off">
       <div id="switch-list" class="autocomplete-list" style="position:absolute;z-index:10;width:99%;background:#fff;border:1px solid #ccc;display:none;max-height:200px;overflow-y:auto;"></div>
@@ -138,34 +177,75 @@
     </table>
   </div>
 
-  <div id="dashboard" style="display: none;" class="mb-4">
-    <div class="row g-4 mb-4">
-      <div class="col-md-6">
-        <div class="p-4 shadow-sm rounded" style="background: var(--panel);">
-          <h6>📅 Total OLTs Isoladas (Mês)</h6>
-          <div id="cardPeriodos" class="fs-4 fw-bold">–</div>
-        </div>
-      </div>
-      <div class="col-md-6">
-        <div class="p-4 shadow-sm rounded" style="background: var(--panel);">
-          <h6>⏱ Média Normalização</h6>
-          <div id="cardMedia" class="fs-4 fw-bold">–</div>
+
+<div id="dashboard" style="display: none;" class="mb-4">
+  <div class="row g-4 mb-4">
+    <div class="col-md-6">
+      <div class="p-4 shadow-sm rounded" style="background: var(--panel);">
+        <h6>📅 Total OLTs Isoladas (Mês)</h6>
+        <div id="cardPeriodosValor" class="fs-2 fw-bold text-center">–</div>
+        <div class="mt-2 text-center" style="font-size:0.95em;">
+          <div style="display:flex;justify-content:center;gap:24px;align-items:center;">
+            <div>
+              <div style="font-size:0.85em;">vs mês anterior</div>
+              <div id="cardPeriodosPctAnterior"></div>
+            </div>
+            <div style="font-size:1.5em;color:#bbb;">|</div>
+            <div>
+              <div style="font-size:0.85em;">vs ano passado</div>
+              <div id="cardPeriodosPctAno"></div>
+            </div>
+          </div>
         </div>
       </div>
     </div>
-    <!-- Botões de navegação de mês -->
-   
-    <div class="p-4 shadow-sm rounded" style="background: var(--panel);">
-      <div class="d-flex justify-content-center align-items-center mb-3" id="dashboard-month-nav">
-        <button id="prevYear" class="btn-reset me-2">&laquo;</button>
-        <button id="prevMonth" class="btn-reset me-2">&lsaquo;</button>
-        <span id="currentMonthLabel" style="min-width:120px;text-align:center;font-weight:600;"></span>
-        <button id="nextMonth" class="btn-reset ms-2">&rsaquo;</button>
-        <button id="nextYear" class="btn-reset ms-2">&raquo;</button>
+    <div class="col-md-6">
+      <div class="p-4 shadow-sm rounded" style="background: var(--panel);">
+        <h6>⏱ Média Normalização</h6>
+        <div id="cardMediaValor" class="fs-2 fw-bold text-center">–</div>
+        <div class="mt-2 text-center" style="font-size:0.95em;">
+          <div style="display:flex;justify-content:center;gap:24px;align-items:center;">
+            <div>
+              <div style="font-size:0.85em;">vs mês anterior</div>
+              <div id="cardMediaPctAnterior"></div>
+            </div>
+            <div style="font-size:1.5em;color:#bbb;">|</div>
+            <div>
+              <div style="font-size:0.85em;">vs ano passado</div>
+              <div id="cardMediaPctAno"></div>
+            </div>
+          </div>
+        </div>
       </div>
-      <canvas id="graficoDashboard"></canvas>
     </div>
   </div>
+  <!-- Botões de navegação de mês e gráfico de mês -->
+  <div class="p-4 shadow-sm rounded" style="background: var(--panel);">
+    <div class="d-flex justify-content-center align-items-center mb-3" id="dashboard-month-nav">
+      <button id="prevYear" class="btn-reset me-2">&laquo;</button>
+      <button id="prevMonth" class="btn-reset me-2">&lsaquo;</button>
+      <span id="currentMonthLabel" style="min-width:120px;text-align:center;font-weight:600;"></span>
+      <button id="nextMonth" class="btn-reset ms-2">&rsaquo;</button>
+      <button id="nextYear" class="btn-reset ms-2">&raquo;</button>
+    </div>
+    <canvas id="graficoDashboard"></canvas>
+  </div>
+  <!-- Gráfico de contratos e mapa de calor lado a lado -->
+  <div class="row mt-4 g-4">
+    <div class="col-md-6">
+      <div class="p-4 shadow-sm rounded h-100" style="background: var(--panel);">
+        <h6 class="mb-3 text-center">📊 OLTs Isoladas por Contrato (Mês)</h6>
+        <canvas id="graficoContratos"></canvas>
+      </div>
+    </div>
+    <div class="col-md-6">
+      <div class="p-4 shadow-sm rounded h-100" style="background: var(--panel);">
+        <h6 class="mb-3 text-center">🌡️ Mapa de Calor OLTs Isoladas (Mês)</h6>
+        <div id="mapaCalor" style="height:305px;width:100%;border-radius:12px;"></div>
+      </div>
+    </div>
+  </div>
+</div>
 
   <div class="table-wrapper">
     <table id="olt-table">
@@ -211,7 +291,6 @@
 // ...código existente acima...
 
 const filterOlt = document.getElementById('filter-olt');
-const filterStatus = document.getElementById('filter-status');
 const filterSwitch = document.getElementById('filter-switch');
 const filterSwitchList = document.getElementById('switch-list');
 const filterAbordagem = document.getElementById('filter-abordagem');
@@ -227,6 +306,10 @@ let filtroDataSelecionada = null;
 let dashboardMesSelecionado = (new Date()).getMonth();
 let dashboardAnoSelecionado = (new Date()).getFullYear();
 let minDashboardDate = null, maxDashboardDate = null;
+let chartContratosInstance = null;
+let mapaCalorInstance = null;
+let navOriginalTop = null;
+
 
 // Carrega as informações adicionais das OLTs do GitHub
 async function loadOltsInfo() {
@@ -377,15 +460,11 @@ function updateTable() {
   const tbody = document.querySelector('#olt-table tbody');
   tbody.innerHTML = '';
   const fO = filterOlt.value.toLowerCase();
-  const fS = filterStatus.value;
-  const fSwitch = filterSwitch.value.toLowerCase();
   const fAbordagem = filterAbordagem.value.toLowerCase();
   const fMunicipio = filterMunicipio.value.toLowerCase();
 
   let filt = allData.filter(r =>
     (!fO || r.olt.toLowerCase().includes(fO)) &&
-    (!fS || r.status === fS) &&
-    (!fSwitch || (r.switch || '').toLowerCase().includes(fSwitch)) &&
     (!fAbordagem || (r.abordagem || '').toLowerCase().includes(fAbordagem)) &&
     (!fMunicipio || (r.municipio || '').toLowerCase().includes(fMunicipio)) &&
     (!filtroDataSelecionada || formatarData(r.data_queda) === filtroDataSelecionada)
@@ -488,7 +567,7 @@ function renderPagination(total) {
 
 function resetFilters() {
   filterOlt.value = '';
-  filterStatus.value = '';
+
   filterSwitch.value = '';
   filterAbordagem.value = '';
   filterMunicipio.value = '';
@@ -498,7 +577,6 @@ function resetFilters() {
 }
 
 filterOlt.oninput = () => { currentPage = 1; updateTable(); };
-filterStatus.onchange = () => { currentPage = 1; updateTable(); };
 filterSwitch.oninput = () => { currentPage = 1; updateTable(); };
 filterAbordagem.oninput = () => { currentPage = 1; updateTable(); };
 filterMunicipio.oninput = () => { currentPage = 1; updateTable(); };
@@ -589,6 +667,7 @@ function gerarDashboard(mes = dashboardMesSelecionado, ano = dashboardAnoSelecio
   const textColor = isDark ? '#fff' : '#263238';
   const dadosAgrupados = {};
 
+  // Agrupa dados do mês atual
   allData.forEach(r => {
     const data = new Date(r.data_queda);
     const normalizado = r.normalizado_em ? new Date(r.normalizado_em) : null;
@@ -602,22 +681,58 @@ function gerarDashboard(mes = dashboardMesSelecionado, ano = dashboardAnoSelecio
     }
   });
 
-  const labels = Object.keys(dadosAgrupados).sort((a, b) => {
-    const [da, ma] = a.split('/').map(Number);
-    const [db, mb] = b.split('/').map(Number);
-    return new Date(ano, ma - 1, da) - new Date(ano, mb - 1, db);
+  // Gera arrays para o gráfico
+  const labels = Object.keys(dadosAgrupados);
+  const isoladas = labels.map(key => dadosAgrupados[key].isoladas);
+  const medias = labels.map(key => {
+    const tempos = dadosAgrupados[key].tempos;
+    return tempos.length ? +(tempos.reduce((a, b) => a + b, 0) / tempos.length).toFixed(1) : 0;
   });
 
-  const isoladas = labels.map(d => dadosAgrupados[d].isoladas);
-  const medias = labels.map(d => {
-    const t = dadosAgrupados[d].tempos;
-    return t.length ? (t.reduce((a, b) => a + b, 0) / t.length).toFixed(1) : 0;
-  });
+  // Função para obter total e média de um mês/ano
+  function getStats(mes, ano) {
+    let total = 0, tempos = [];
+    allData.forEach(r => {
+      const data = new Date(r.data_queda);
+      const normalizado = r.normalizado_em ? new Date(r.normalizado_em) : null;
+      if (isNaN(data) || data.getMonth() !== mes || data.getFullYear() !== ano) return;
+      total++;
+      if (normalizado) {
+        tempos.push((normalizado - data) / 3600000);
+      }
+    });
+    return {
+      total,
+      media: tempos.length ? (tempos.reduce((a, b) => a + b, 0) / tempos.length) : 0
+    };
+  }
 
-  document.getElementById('cardPeriodos').textContent = isoladas.reduce((acc, val) => acc + val, 0);
-  const todasHoras = Object.values(dadosAgrupados).flatMap(d => d.tempos);
-  const mediaGeral = todasHoras.length ? (todasHoras.reduce((a, b) => a + b, 0) / todasHoras.length).toFixed(1) : '–';
-  document.getElementById('cardMedia').textContent = `${mediaGeral}h`;
+  // Calcula estatísticas
+  const statsAtual = getStats(mes, ano);
+  const statsAnterior = getStats(mes === 0 ? 11 : mes - 1, mes === 0 ? ano - 1 : ano);
+  const statsAnoPassado = getStats(mes, ano - 1);
+
+  // Função para gerar HTML do indicador
+  function indicadorPct(valorAtual, valorAnterior) {
+    if (valorAnterior === 0) return '<span style="color:#888;">–</span>';
+    const pct = ((valorAtual - valorAnterior) / valorAnterior) * 100;
+    const up = pct > 0;
+    const cor = up ? 'red' : 'green';
+    const seta = up ? '▲' : '▼';
+    return `<span style="color:${cor};font-size:1.1em;font-weight:bold;">${seta} ${Math.abs(pct).toFixed(1)}%</span>`;
+  }
+
+  // Atualiza HTML dos cards (valores)
+  document.getElementById('cardPeriodosValor').textContent = statsAtual.total;
+  document.getElementById('cardMediaValor').textContent = statsAtual.media ? statsAtual.media.toFixed(1) + 'h' : '–';
+
+  // Atualiza HTML dos cards (porcentagens)
+  document.getElementById('cardPeriodosPctAnterior').innerHTML = indicadorPct(statsAtual.total, statsAnterior.total);
+  document.getElementById('cardPeriodosPctAno').innerHTML = indicadorPct(statsAtual.total, statsAnoPassado.total);
+  document.getElementById('cardMediaPctAnterior').innerHTML = indicadorPct(statsAtual.media, statsAnterior.media);
+  document.getElementById('cardMediaPctAno').innerHTML = indicadorPct(statsAtual.media, statsAnoPassado.media);
+
+
 
   if (chartInstance) chartInstance.destroy();
   chartInstance = new Chart(ctx, {
@@ -683,32 +798,215 @@ function gerarDashboard(mes = dashboardMesSelecionado, ano = dashboardAnoSelecio
         }
       },
       scales: {
-        x: {
-          ticks: { color: textColor, maxRotation: 0, minRotation: 0 },
-          grid: { display: false }
+  x: {
+    ticks: { color: textColor, maxRotation: 0, minRotation: 0 },
+    grid: { display: false }
+  },
+  y: {
+    beginAtZero: true,
+    title: { display: false },
+    ticks: { display: false },
+    grid: { display: false },
+    min: 0,
+    suggestedMax: Math.max(...isoladas, 1) * 2.5
+  },
+  y1: {
+    beginAtZero: true,
+    position: 'right',
+    title: { display: false },
+    ticks: { display: false },
+    grid: { drawOnChartArea: false },
+    min: Math.max(...medias, 0) * 2.5 * -1,
+    suggestedMax: Math.max(Math.max(...medias, 1) * 1.3, 5)
+  }
+}
+    },
+    plugins: [ChartDataLabels]
+  });
+
+  gerarGraficoContratos(mes, ano);
+  gerarMapaCalor(mes, ano);
+}
+
+function gerarGraficoContratos(mes = dashboardMesSelecionado, ano = dashboardAnoSelecionado) {
+  const ctx = document.getElementById("graficoContratos").getContext("2d");
+  const isDark = document.documentElement.getAttribute("data-theme") === "dark";
+  const barColor = isDark ? '#1ee2e5' : '#0D47A1';
+  const lineColor = isDark ? '#ffc107' : '#ff5722';
+  const textColor = isDark ? '#fff' : '#263238';
+
+  // Agrupa por contrato
+  const contratosAgrupados = {};
+  allData.forEach(r => {
+    const data = new Date(r.data_queda);
+    const contrato = (r.contrato || r.CONTRATO || (oltsInfo[r.olt]?.CONTRATO) || 'Sem Contrato');
+    const normalizado = r.normalizado_em ? new Date(r.normalizado_em) : null;
+    if (isNaN(data) || data.getMonth() !== mes || data.getFullYear() !== ano) return;
+    if (!contratosAgrupados[contrato]) contratosAgrupados[contrato] = { isoladas: 0, tempos: [] };
+    contratosAgrupados[contrato].isoladas++;
+    if (normalizado) {
+      const horas = (normalizado - data) / 3600000;
+      contratosAgrupados[contrato].tempos.push(horas);
+    }
+  });
+
+  const labels = Object.keys(contratosAgrupados);
+  const isoladas = labels.map(key => contratosAgrupados[key].isoladas);
+  const medias = labels.map(key => {
+    const tempos = contratosAgrupados[key].tempos;
+    return tempos.length ? +(tempos.reduce((a, b) => a + b, 0) / tempos.length).toFixed(1) : 0;
+  });
+
+  if (chartContratosInstance) chartContratosInstance.destroy();
+  chartContratosInstance = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [
+        {
+          label: 'OLTs Isoladas',
+          data: isoladas,
+          backgroundColor: barColor,
+          borderRadius: 6,
+          borderSkipped: false,
+          yAxisID: 'y'
         },
-        y: {
-          beginAtZero: true,
-          title: { display: false },
-          ticks: { display: false },
-          grid: { display: false },
-          min: 0,
-          suggestedMax: Math.max(...isoladas) * 2.5
-        },
-        y1: {
-          beginAtZero: true,
-          position: 'right',
-          title: { display: false },
-          ticks: { display: false },
-          grid: { drawOnChartArea: false },
-          min: -10,
-          suggestedMax: Math.max(...medias) + 1
+        {
+          type: 'line',
+          label: 'Média Normalização (h)',
+          data: medias,
+          borderColor: lineColor,
+          backgroundColor: lineColor,
+          yAxisID: 'y1',
+          tension: 0.3,
+          fill: false,
+          pointRadius: 4,
+          pointHoverRadius: 6
         }
-      }
+      ]
+    },
+    options: {
+      responsive: true,
+      interaction: { mode: 'index', intersect: false },
+      animation: { duration: 1000, easing: 'easeOutQuart' },
+      plugins: {
+        legend: {
+          display: true,
+          position: 'bottom',
+          labels: { color: textColor, boxWidth: 12, padding: 15 }
+        },
+        tooltip: {
+          callbacks: {
+            label: ctx => ctx.dataset.type === 'line'
+              ? `Média: ${ctx.parsed.y}h`
+              : `${ctx.parsed.y} ocorrências`
+          }
+        },
+        datalabels: {
+          display: true,
+          color: textColor,
+          font: { weight: 'bold' },
+          anchor: 'end',
+          align: 'top',
+          formatter: (value, context) => context.dataset.type === 'line' ? `${value}h` : value
+        }
+      },
+      scales: {
+  x: {
+    ticks: { color: textColor, maxRotation: 0, minRotation: 0 },
+    grid: { display: false }
+  },
+  y: {
+    beginAtZero: true,
+    title: { display: false },
+    ticks: { display: false },
+    grid: { display: false },
+    min: 0,
+    suggestedMax: Math.max(...isoladas, 1) * 2.5
+  },
+  y1: {
+    beginAtZero: true,
+    position: 'right',
+    title: { display: false },
+    ticks: { display: false },
+    grid: { drawOnChartArea: false },
+    min: Math.max(...medias, 0) * 2.5 * -1,
+    suggestedMax: Math.max(Math.max(...medias, 1) * 1.3, 5)
+  }
+}
     },
     plugins: [ChartDataLabels]
   });
 }
+
+
+
+function gerarMapaCalor(mes = dashboardMesSelecionado, ano = dashboardAnoSelecionado) {
+  if (mapaCalorInstance) {
+    mapaCalorInstance.remove();
+    mapaCalorInstance = null;
+  }
+
+  const isDark = document.documentElement.getAttribute("data-theme") === "dark";
+  const tileUrl = isDark
+    ? 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png'
+    : 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png';
+  const tileAttrib = '&copy; <a href="https://carto.com/"></a>';
+
+  // Filtra OLTs com LAT/LONG válidos e data_queda no mês/ano selecionado
+  const pontos = allData
+    .filter(r => {
+      const data = new Date(r.data_queda);
+      return (
+        oltsInfo[r.olt] &&
+        oltsInfo[r.olt].LAT &&
+        oltsInfo[r.olt].LONG &&
+        !isNaN(data) &&
+        data.getMonth() === mes &&
+        data.getFullYear() === ano
+      );
+    })
+    .map(r => [
+      parseFloat(oltsInfo[r.olt].LAT),
+      parseFloat(oltsInfo[r.olt].LONG),
+      2 // intensidade
+    ]);
+
+  // Centro padrão: São Paulo Estado
+  const centro = pontos.length
+    ? [pontos[0][0], pontos[0][1]]
+    : [-23.5505, -46.6333];
+
+    mapaCalorInstance = L.map('mapaCalor', {
+      minZoom: 6,
+      maxZoom: 19,
+      maxBounds: [
+        [-25.5, -54], // sudoeste do estado de SP
+        [-19.5, -44]  // nordeste do estado de SP
+      ]
+    }).setView(centro, 7);
+
+  L.tileLayer(tileUrl, {
+    attribution: tileAttrib
+  }).addTo(mapaCalorInstance);
+
+  if (pontos.length) {
+  L.heatLayer(pontos, {
+    radius: 35,      // maior raio
+    blur: 15,        // mais difuso
+    maxZoom: 12,
+    minOpacity: 0.4, // mais visível mesmo com poucos pontos
+    gradient: {
+      0.2: 'blue',
+      0.4: 'cyan',
+      0.6: 'lime',
+      0.8: 'yellow',
+      1.0: 'red'
+    }
+  }).addTo(mapaCalorInstance);
+}
+}
+
 
 // Adicione esta função para mostrar/remover o filtro visual do dia selecionado
 function mostrarFiltroDiaSelecionado(diaLabel) {
@@ -747,6 +1045,28 @@ window.addEventListener('DOMContentLoaded', () => {
 loadOltsInfo().then(() => {
   loadData();
   setInterval(loadData, 1000);
+});
+
+
+window.addEventListener('scroll', function() {
+  const nav = document.getElementById('dashboard-month-nav');
+  const header = document.querySelector('header');
+  if (!nav || !header) return;
+
+  // Salva a posição original do nav na primeira execução
+  if (navOriginalTop === null) {
+    const rect = nav.getBoundingClientRect();
+    navOriginalTop = rect.top + window.scrollY;
+  }
+
+  const headerHeight = header.offsetHeight;
+
+  // Ativa sticky só se o scroll passou do ponto original do nav
+  if (window.scrollY + headerHeight >= navOriginalTop) {
+    nav.classList.add('sticky-nav');
+  } else {
+    nav.classList.remove('sticky-nav');
+  }
 });
 </script>
 </body>

@@ -681,8 +681,13 @@ function gerarDashboard(mes = dashboardMesSelecionado, ano = dashboardAnoSelecio
     }
   });
 
-  // Gera arrays para o gráfico
-  const labels = Object.keys(dadosAgrupados);
+  let labels = Object.keys(dadosAgrupados);
+  // Ordena as labels pelo dia (1 a 31)
+  labels = labels.sort((a, b) => {
+    const [diaA] = a.split('/');
+    const [diaB] = b.split('/');
+    return parseInt(diaA) - parseInt(diaB);
+  });
   const isoladas = labels.map(key => dadosAgrupados[key].isoladas);
   const medias = labels.map(key => {
     const tempos = dadosAgrupados[key].tempos;

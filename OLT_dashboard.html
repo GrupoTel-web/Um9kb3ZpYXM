@@ -43,7 +43,7 @@
   box-shadow: 0 2px 6px var(--shadow);
   padding: 1rem; /* Adicione padding para evitar cortes */
   margin: 0; /* Remova margens extras */
-  max-height: 450px;
+  max-height: 390px;
   height: auto;
 }
 
@@ -55,8 +55,7 @@
   box-shadow: 0 2px 6px var(--shadow);
   padding: 1rem; /* Adicione padding para evitar cortes */
   margin: 0; /* Remova margens extras */
-  max-height: 450px;
-  height: auto;
+  height:390px;
 }
 
 
@@ -222,11 +221,11 @@
   <!-- Botões de navegação de mês e gráfico de mês -->
   <div class="p-4 shadow-sm rounded" style="background: var(--panel);">
     <div class="d-flex justify-content-center align-items-center mb-3" id="dashboard-month-nav">
-      <button id="prevYear" class="btn-reset me-2">&laquo;</button>
-      <button id="prevMonth" class="btn-reset me-2">&lsaquo;</button>
+      <button id="prevYear" class="btn-reset me-2">❮❮</button>
+      <button id="prevMonth" class="btn-reset me-2">❮</button>
       <span id="currentMonthLabel" style="min-width:120px;text-align:center;font-weight:600;"></span>
-      <button id="nextMonth" class="btn-reset ms-2">&rsaquo;</button>
-      <button id="nextYear" class="btn-reset ms-2">&raquo;</button>
+      <button id="nextMonth" class="btn-reset ms-2">❯</button>
+      <button id="nextYear" class="btn-reset ms-2">❯❯</button>
     </div>
     <canvas id="graficoDashboard"></canvas>
   </div>
@@ -241,7 +240,7 @@
     <div class="col-md-6">
       <div class="p-4 shadow-sm rounded h-100" style="background: var(--panel);">
         <h6 class="mb-3 text-center">🌡️ Mapa de Calor OLTs Isoladas (Mês)</h6>
-        <div id="mapaCalor" style="height:305px;width:100%;border-radius:12px;"></div>
+        <div id="mapaCalor" style="height:390px;width:100%;border-radius:12px;"></div>
       </div>
     </div>
   </div>
@@ -275,16 +274,14 @@
 <script>
   // Firebase config
   const firebaseConfig = {
-    apiKey: "AIzaSyCOkphMnDynwb6nsCxIVLjyIfbWmvONRVs",
-    authDomain: "database-olt.firebaseapp.com",
-    databaseURL: "https://database-olt-default-rtdb.firebaseio.com",
-    projectId: "database-olt",
-    storageBucket: "database-olt.appspot.com",
-    messagingSenderId: "244877494813",
-    appId: "1:244877494813:web:e8545b5e20dc7efebb54f4",
-    measurementId: "G-QD3NCTP2QF"
-  };
-
+  apiKey: "AIzaSyAkZtzwDR7v2hlZS6CPGtjcDgMdYXqvKbM",
+  authDomain: "dash-olt.firebaseapp.com",
+  projectId: "dash-olt",
+  storageBucket: "dash-olt.firebasestorage.app",
+  messagingSenderId: "1099383496159",
+  appId: "1:1099383496159:web:378f0c9170dc5ec14f386a",
+  measurementId: "G-8ZY29KZSJX"
+};
   firebase.initializeApp(firebaseConfig);
   const db = firebase.database();
 

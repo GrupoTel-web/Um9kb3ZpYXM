@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="pt-br" data-theme="light">
 <head>
@@ -13,8 +14,14 @@
   <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels"></script>
 <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
 <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
-
   <script src="https://unpkg.com/leaflet.heat/dist/leaflet-heat.js"></script>
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- DataTables CSS -->
+    <link href="https://cdn.datatables.net/1.13.4/css/dataTables.bootstrap5.min.css" rel="stylesheet">
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+  
 
 
   <style>
@@ -33,30 +40,28 @@
     .table-wrapper{background:var(--panel);border-radius:.75rem;box-shadow:0 2px 6px var(--shadow);overflow-x:auto;}
     table{width:100%;border-collapse:collapse;margin:0;}
     thead{background:var(--primary);color:#fff;cursor:pointer;}
-    th,td{padding:.75rem 1rem;text-align:center;border-bottom:1px solid var(--hover);font-size:.75rem;}
+    th,td{padding:.75rem 1rem;text-align:center;border-bottom:1px solid var(--hover);font-size:.65rem;}
     tbody tr:hover{background:var(--hover);}    
     .status-down{color:#b00020;font-weight:600;} .status-up{color:#2e7d32;font-weight:600;}
     #graficoDashboard {
   width: 100% !important;
-  max-width: 100% !important;
   background: var(--bg);
   border-radius: .75rem;
   box-shadow: 0 2px 6px var(--shadow);
   padding: 1rem; /* Adicione padding para evitar cortes */
   margin: 0; /* Remova margens extras */
-  max-height: 390px;
+  max-height: 300px;
   height: auto;
 }
 
 #graficoContratos {
   width: 100% !important;
-  max-width: 100% !important;
   background: var(--bg);
   border-radius: .75rem;
   box-shadow: 0 2px 6px var(--shadow);
   padding: 1rem; /* Adicione padding para evitar cortes */
   margin: 0; /* Remova margens extras */
-  height:390px;
+  max-height:290px;
 }
 
 
@@ -73,7 +78,7 @@
   color: white;
   border: none;
   border-radius: 0.5rem;
-  font-size: .75rem;
+  font-size: .60rem;
 }
 
 .pagination button.disabled {
@@ -111,6 +116,17 @@
 }
 
 
+
+.search-card { background: #ffffff00; border-radius: 10px; padding: 25px; box-shadow: 0 4px 12px #0019335a; margin-top: -40px; position: relative; z-index:2; }
+    .search-input, .search-select { height:50px; font-size:1rem; }
+    table.dataTable { border-collapse: separate; border-spacing: 0 0.5em; }
+    table.dataTable thead { background:#f8f9fa; border-bottom:2px solid #dee2e6; }
+    table.dataTable thead th { color:#333; border:none; padding:12px 15px; font-size:15px; font-weight:500; white-space:nowrap; }
+    table.dataTable tbody tr { background:#fff; border-radius:8px; box-shadow:0 2px 4px rgba(0,0,0,0.08); transition: background 0.3s; margin-bottom:10px; white-space:nowrap; }
+    table.dataTable tbody tr:hover { background:#f1f1f1; }
+    table.dataTable tbody td { padding:12px 15px; border:none; vertical-align:middle; }
+    .dataTables_wrapper .paginate_button { background:#001933!important; color:#fff!important; border-radius:5px; margin:0 2px; }
+
  
  </style>
 </head>
@@ -120,6 +136,7 @@
     <div>
       <button id="themeToggle"><i class="fas fa-moon"></i></button>
       <button id="toggleDashboard" class="btn-reset ms-2">📊 Ver Dashboard</button>
+      <!-- <button id="toggleMapaNew" class="btn-reset ms-2">🗺️ Ver Mapa </button> -->
     </div>
   </header>
 
@@ -179,9 +196,9 @@
 
 
 <div id="dashboard" style="display: none;" class="mb-4">
-  <div class="row g-4 mb-4">
+  <div class="row g-2 mb-2">
     <div class="col-md-6">
-      <div class="p-4 shadow-sm rounded" style="background: var(--panel);">
+      <div class="p-4 shadow-sm rounded" style="zoom: 70%; background: var(--panel);">
         <h6>📅 Total OLTs Isoladas (Mês)</h6>
         <div id="cardPeriodosValor" class="fs-2 fw-bold text-center">–</div>
         <div class="mt-2 text-center" style="font-size:0.95em;">
@@ -200,7 +217,7 @@
       </div>
     </div>
     <div class="col-md-6">
-      <div class="p-4 shadow-sm rounded" style="background: var(--panel);">
+      <div class="p-4 shadow-sm rounded" style="zoom: 70%; background: var(--panel);">
         <h6>⏱ Média Normalização</h6>
         <div id="cardMediaValor" class="fs-2 fw-bold text-center">–</div>
         <div class="mt-2 text-center" style="font-size:0.95em;">
@@ -220,7 +237,7 @@
     </div>
   </div>
   <!-- Botões de navegação de mês e gráfico de mês -->
-  <div class="p-4 shadow-sm rounded" style="background: var(--panel);">
+  <div class="p-2 shadow-sm rounded" style="background: var(--panel);">
     <div class="d-flex justify-content-center align-items-center mb-3" id="dashboard-month-nav">
       <button id="prevYear" class="btn-reset me-2">❮❮</button>
       <button id="prevMonth" class="btn-reset me-2">❮</button>
@@ -231,21 +248,33 @@
     <canvas id="graficoDashboard"></canvas>
   </div>
   <!-- Gráfico de contratos e mapa de calor lado a lado -->
-  <div class="row mt-4 g-4">
+  <div class="row mt-1 g-2">
     <div class="col-md-6">
       <div class="p-4 shadow-sm rounded h-100" style="background: var(--panel);">
         <h6 class="mb-3 text-center">📊 OLTs Isoladas por Contrato (Mês)</h6>
-        <canvas id="graficoContratos"></canvas>
+        <canvas id="graficoContratos" style="height:290px;width:100%;border-radius:12px;"></canvas>
       </div>
     </div>
     <div class="col-md-6">
       <div class="p-4 shadow-sm rounded h-100" style="background: var(--panel);">
         <h6 class="mb-3 text-center">🌡️ Mapa de Calor OLTs Isoladas (Mês)</h6>
-        <div id="mapaCalor" style="height:390px;width:100%;border-radius:12px;"></div>
+        <div id="mapaCalor" style="height:290px;width:100%;border-radius:12px;"></div>
       </div>
     </div>
   </div>
 </div>
+
+
+<!-- <div id="mapaqueimadas" style="display: none;" class="mb-4">
+  <div class="row mt-1 g-2">
+    <div class="col-md-6">
+      <div class="p-4 shadow-sm rounded h-100" style="background: var(--panel);">
+        <h6 class="mb-3 text-center">🌡️ Mapa de Calor OLTs Isoladas (Mês)</h6>
+        <div id="mapaCalorNew" style="height:290px;width:100%;border-radius:12px;"></div>
+      </div>
+    </div>
+  </div>
+</div> -->
 
   <div class="table-wrapper">
     <table id="olt-table">
@@ -268,7 +297,6 @@
   </div>
   <div class="pagination" id="pagination"></div>
 </div>
-
 
 <audio id="alertAudio" src="alert.mp3" preload="auto"></audio>
 <audio id="alertDownAudio" src="up.mp3" preload="auto"></audio>
@@ -469,7 +497,15 @@ function updateTable() {
   );
 
   // Ordena pela data_queda (mais recente primeiro)
-  filt.sort((a, b) => new Date(b.data_queda) - new Date(a.data_queda));
+filt.sort((a, b) => {
+  const dateA = a.data_queda ? new Date(a.data_queda) : null;
+  const dateB = b.data_queda ? new Date(b.data_queda) : null;
+ 
+  if (!dateA && !dateB) return 0;
+  if (!dateA) return -1;
+  if (!dateB) return 1;
+  return dateB - dateA;
+});
 
   const total = Math.ceil(filt.length / rowsPerPage);
   const start = (currentPage - 1) * rowsPerPage;
@@ -656,6 +692,15 @@ document.getElementById('toggleDashboard').onclick = () => {
     gerarDashboard();
   }
 };
+
+// document.getElementById('toggleMapaNew').onclick = () => {
+//   const el = document.getElementById('mapaqueimadas');
+//   el.style.display = el.style.display === 'none' ? 'block' : 'none';
+//   if (el.style.display === 'block') {
+//     atualizarLabelMes();
+//     gerarDashboard();
+//   }
+// };
 
 function gerarDashboard(mes = dashboardMesSelecionado, ano = dashboardAnoSelecionado) {
   const ctx = document.getElementById("graficoDashboard").getContext("2d");
@@ -951,12 +996,20 @@ function gerarMapaCalor(mes = dashboardMesSelecionado, ano = dashboardAnoSelecio
   }
 
   const isDark = document.documentElement.getAttribute("data-theme") === "dark";
-  const tileUrl = isDark
-    ? 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png'
-    : 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png';
-  const tileAttrib = '&copy; <a href="https://carto.com/"></a>';
 
-  // Filtra OLTs com LAT/LONG válidos e data_queda no mês/ano selecionado
+  const tileClaro = L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+    attribution: '&copy; https://carto.com/'
+  });
+
+  const tileEscuro = L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+    attribution: '&copy; https://carto.com/'
+  });
+
+  const camadaClima = L.tileLayer('http://api.openweathermap.org/data/2.5/forecast?id=524901&appid=46fcd567a9489e015ff767712709602a', {
+    attribution: '&copy; https://openweathermap.org/',
+    opacity: 0.5
+  });
+
   const pontos = allData
     .filter(r => {
       const data = new Date(r.data_queda);
@@ -972,43 +1025,51 @@ function gerarMapaCalor(mes = dashboardMesSelecionado, ano = dashboardAnoSelecio
     .map(r => [
       parseFloat(oltsInfo[r.olt].LAT),
       parseFloat(oltsInfo[r.olt].LONG),
-      2 // intensidade
+      2
     ]);
 
-  // Centro padrão: São Paulo Estado
   const centro = pontos.length
     ? [pontos[0][0], pontos[0][1]]
     : [-23.5505, -46.6333];
 
-    mapaCalorInstance = L.map('mapaCalor', {
-      minZoom: 6,
-      maxZoom: 19,
-      maxBounds: [
-        [-25.5, -54], // sudoeste do estado de SP
-        [-19.5, -44]  // nordeste do estado de SP
-      ]
-    }).setView(centro, 7);
+  mapaCalorInstance = L.map('mapaCalor', {
+    minZoom: 6,
+    maxZoom: 19,
+    maxBounds: [
+      [-25.5, -54],
+      [-19.5, -44]
+    ],
+    layers: [isDark ? tileEscuro : tileClaro] // camada base inicial
+  }).setView(centro, 7);
 
-  L.tileLayer(tileUrl, {
-    attribution: tileAttrib
-  }).addTo(mapaCalorInstance);
+  const baseMaps = {
+    "Mapa Claro": tileClaro,
+    "Mapa Escuro": tileEscuro
+  };
+
+  const overlayMaps = {
+    "Clima (Nuvens)": camadaClima
+  };
+
+  L.control.layers(baseMaps, overlayMaps).addTo(mapaCalorInstance);
 
   if (pontos.length) {
-  L.heatLayer(pontos, {
-    radius: 35,      // maior raio
-    blur: 15,        // mais difuso
-    maxZoom: 12,
-    minOpacity: 0.4, // mais visível mesmo com poucos pontos
-    gradient: {
-      0.2: 'blue',
-      0.4: 'cyan',
-      0.6: 'lime',
-      0.8: 'yellow',
-      1.0: 'red'
-    }
-  }).addTo(mapaCalorInstance);
+    L.heatLayer(pontos, {
+      radius: 35,
+      blur: 15,
+      maxZoom: 12,
+      minOpacity: 0.4,
+      gradient: {
+        0.2: 'blue',
+        0.4: 'cyan',
+        0.6: 'lime',
+        0.8: 'yellow',
+        1.0: 'red'
+      }
+    }).addTo(mapaCalorInstance);
+  }
 }
-}
+
 
 
 // Adicione esta função para mostrar/remover o filtro visual do dia selecionado
@@ -1071,6 +1132,7 @@ window.addEventListener('scroll', function() {
     nav.classList.remove('sticky-nav');
   }
 });
+
 </script>
 </body>
 </html>

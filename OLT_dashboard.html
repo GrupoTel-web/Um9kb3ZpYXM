@@ -303,13 +303,14 @@
 <script>
   // Firebase config
   const firebaseConfig = {
-  apiKey: "AIzaSyAkZtzwDR7v2hlZS6CPGtjcDgMdYXqvKbM",
-  authDomain: "dash-olt.firebaseapp.com",
-  projectId: "dash-olt",
-  storageBucket: "dash-olt.firebasestorage.app",
-  messagingSenderId: "1099383496159",
-  appId: "1:1099383496159:web:378f0c9170dc5ec14f386a",
-  measurementId: "G-8ZY29KZSJX"
+  apiKey: "AIzaSyAlQ4T6zSMjLCrQ98Jg9U9s_sOck7WR9is",
+  authDomain: "olt-dash.firebaseapp.com",
+  databaseURL: "https://olt-dash-default-rtdb.firebaseio.com",
+  projectId: "olt-dash",
+  storageBucket: "olt-dash.firebasestorage.app",
+  messagingSenderId: "357051885082",
+  appId: "1:357051885082:web:f3ccfb42553e01d5c213a3",
+  measurementId: "G-5DHZWQ8KDB"
 };
   firebase.initializeApp(firebaseConfig);
   const db = firebase.database();
@@ -435,16 +436,34 @@ function loadData() {
     lastDataLength = arr.length;
 
     allData = arr.map(item => {
-      const infoOlt = oltsInfo[item.olt] || {};
-      return {
-        ...item,
-        switch: infoOlt.NOME_REDE_SWD || '',
-        clientes: infoOlt.Clientes || '',
-        abordagem: infoOlt.ABORDAGEM || '',
-        municipio: infoOlt.MUNI || '',
-        condominio: infoOlt.CONDOMINIO || ''
-      };
-    });
+  const infoOlt = oltsInfo[item.olt] || {};
+  return {
+    ...item,
+    switch: infoOlt.NOME_REDE_SWD || '',
+    clientes: infoOlt.Clientes || '',
+    abordagem: infoOlt.ABORDAGEM || '',
+    municipio: infoOlt.MUNI || '',
+    condominio: infoOlt.CONDOMINIO || ''
+  };
+}).filter(item => {
+  const chavesIgnoradas = new Set([
+    'BR_BREBA_OLT02_2025-07-28_01-45-38-450673',
+    'BR_IBLRP_OLT01_2025-07-28_01-55-06-291126',
+    'BR_JADSF_OLT02_2025-07-28_01-48-38-502939',
+    'BR_OCOSN_OLT09_2025-07-28_01-53-31-073742'
+  ]);
+ 
+  const dataQueda = item.data_queda ? new Date(item.data_queda) : null;
+  const limiteInicial = new Date("2025-07-28T00:01:00");
+  const limiteFinal = new Date("2025-07-28T02:00:00");
+ 
+  const caiuNoHorarioCritico = dataQueda && dataQueda >= limiteInicial && dataQueda <= limiteFinal;
+ 
+  return !(
+    (!item.data_queda && item.normalizado_em) ||          // ignora se tem normalizado_em mas sem data_queda
+    (item.status === 'DOWN' && caiuNoHorarioCritico)      // ignora se caiu no horário crítico e ainda está DOWN
+  );
+});
 
     const currentDownOlts = new Set(
       allData.filter(r => r.status === 'DOWN').map(r => r.olt)
